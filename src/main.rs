@@ -1,10 +1,11 @@
+mod mds;
+
 use byteorder::{LittleEndian, ReadBytesExt};
+use mds::header;
 use std::{
     fs::read,
     io::{Cursor, Seek, SeekFrom},
 };
-
-const MDS_SIGNATURE: &[u8; 16] = b"MEDIA DESCRIPTOR";
 
 fn main() {
     let mut args = std::env::args();
@@ -17,42 +18,18 @@ fn main() {
     }
 
     let bytes = read(file).unwrap();
+    let header = header(&bytes).unwrap().1;
 
-    if bytes.len() < 0x54 {
-        panic!("invalid mds");
-    }
+    let mut cursor = Cursor::new(&bytes);
+    cursor.seek(SeekFrom::Start(0x5C)).unwrap();
+    let num_sectors = cursor.read_u32::<LittleEndian>().unwrap();
 
-    if !memcmp(&bytes, MDS_SIGNATURE) {
-        panic!("invalid signature");
-    }
+    let num_entries = bytes[0x62];
+    let num_leadin = bytes[0x63];
+    let num_sessions = bytes[0x64];
+    let num_tracks = bytes[0x66];
 
-    let mut cur = Cursor::new(&bytes);
-    cur.seek(SeekFrom::Start(0x50)).unwrap();
+    println!("sectors: {num_sectors}, entries: {num_entries}, leadin: {num_leadin}, sessions: {num_sessions}, tracks: {num_tracks}");
 
-    let session_offset = cur.read_i32::<LittleEndian>().unwrap();
-
-    cur.seek(SeekFrom::Start(session_offset as u64 + 14))
-        .unwrap();
-    let track_count = cur.read_i16::<LittleEndian>().unwrap();
-    cur.seek(SeekFrom::Start(session_offset as u64 + 20))
-        .unwrap();
-    let track_offset = cur.read_u32::<LittleEndian>().unwrap();
-
-    if track_count > 99 || track_offset > bytes.len().try_into().unwrap() {
-        panic!("invalid track count or block offset");
-    }
-
-    println!("MDS size: {}", bytes.len());
-    println!("track count: {track_count}");
-    println!("session offset: {track_offset}");
-}
-
-fn memcmp(actual: &[u8], expected: &[u8]) -> bool {
-    for i in 0..expected.len() {
-        if actual[i] != expected[i] {
-            return false;
-        }
-    }
-
-    true
+    println!("{:#?}", header);
 }
