@@ -1,7 +1,7 @@
 mod mds;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use mds::header;
+use mds::mds;
 use std::{
     fs::read,
     io::{Cursor, Seek, SeekFrom},
@@ -18,7 +18,7 @@ fn main() {
     }
 
     let bytes = read(file).unwrap();
-    let header = header(&bytes).unwrap().1;
+    let mds = mds(&bytes).unwrap().1;
 
     let mut cursor = Cursor::new(&bytes);
     cursor.seek(SeekFrom::Start(0x5C)).unwrap();
@@ -31,5 +31,5 @@ fn main() {
 
     println!("sectors: {num_sectors}, entries: {num_entries}, leadin: {num_leadin}, sessions: {num_sessions}, tracks: {num_tracks}");
 
-    println!("{:#?}", header);
+    println!("{:#X?}", mds);
 }
