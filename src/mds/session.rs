@@ -10,14 +10,14 @@ const DATA_BLOCK_SIZE: usize = 0x50;
 
 #[derive(Debug)]
 pub struct Session {
-    start_sector: i32,
-    end_sector: i32,
-    session_number: u16,
-    num_data_blocks: u8,
-    num_lead_in_data_blocks: u8,
-    first_track_num: u16,
-    last_track_num: u16,
-    first_track_offset: u32,
+    _start_sector: i32,
+    _end_sector: i32,
+    _session_number: u16,
+    _num_data_blocks: u8,
+    _num_lead_in_data_blocks: u8,
+    _first_track_num: u16,
+    _last_track_num: u16,
+    _first_track_offset: u32,
     tracks: Vec<Track>,
 }
 
@@ -65,14 +65,14 @@ pub fn session(input: Bytes, session_offset: usize) -> Res<Session> {
     }
 
     let session = Session {
-        start_sector,
-        end_sector,
-        session_number,
-        num_data_blocks,
-        num_lead_in_data_blocks,
-        first_track_num,
-        last_track_num,
-        first_track_offset,
+        _start_sector: start_sector,
+        _end_sector: end_sector,
+        _session_number: session_number,
+        _num_data_blocks: num_data_blocks,
+        _num_lead_in_data_blocks: num_lead_in_data_blocks,
+        _first_track_num: first_track_num,
+        _last_track_num: last_track_num,
+        _first_track_offset: first_track_offset,
         tracks,
     };
 

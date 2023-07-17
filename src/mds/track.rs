@@ -11,20 +11,20 @@ use nom::{
 
 #[derive(Debug)]
 pub struct Track {
-    track_mode: TrackMode,
+    _track_mode: TrackMode,
     num_subchannels: SubChannels,
-    adr: u8,
-    track_number: u8,
+    _adr: u8,
+    _track_number: u8,
     point: u8,
-    minute: u8,
-    second: u8,
-    frame: u8,
+    _minute: u8,
+    _second: u8,
+    _frame: u8,
     index: Option<IndexBlock>,
     sector_size: u16,
-    track_start_sector: i32,
-    track_start_offset: u64,
-    num_filenames: u32,
-    filename_offset: u32,
+    _track_start_sector: i32,
+    _track_start_offset: u64,
+    _num_filenames: u32,
+    _filename_offset: u32,
 }
 
 #[derive(Debug)]
@@ -158,20 +158,20 @@ pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
     };
 
     let track = Track {
-        track_mode,
+        _track_mode: track_mode,
         num_subchannels,
-        adr,
-        track_number,
+        _adr: adr,
+        _track_number: track_number,
         point,
-        minute,
-        second,
-        frame,
+        _minute: minute,
+        _second: second,
+        _frame: frame,
         index,
         sector_size,
-        track_start_sector,
-        track_start_offset,
-        num_filenames,
-        filename_offset,
+        _track_start_sector: track_start_sector,
+        _track_start_offset: track_start_offset,
+        _num_filenames: num_filenames,
+        _filename_offset: filename_offset,
     };
 
     Ok((rest, track))

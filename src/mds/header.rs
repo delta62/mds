@@ -11,8 +11,8 @@ pub type Version = [u8; 2];
 
 #[derive(Debug)]
 pub struct Header {
-    version: Version,
-    media_type: MediaType,
+    _version: Version,
+    _media_type: MediaType,
     num_sessions: u16,
     session_offset: u32,
 }
@@ -60,8 +60,8 @@ pub fn header(input: Bytes) -> Res<Header> {
         tuple((id, version, media_type, le_u16, dvd_padding, le_u32))(input)?;
 
     let header = Header {
-        version,
-        media_type,
+        _version: version,
+        _media_type: media_type,
         num_sessions,
         session_offset,
     };

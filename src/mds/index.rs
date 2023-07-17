@@ -4,7 +4,7 @@ use super::types::{Bytes, Res};
 
 #[derive(Debug)]
 pub struct IndexBlock {
-    index0_sectors: u32,
+    _index0_sectors: u32,
     pub index1_sectors: u32,
 }
 
@@ -14,7 +14,7 @@ pub fn index_block(input: Bytes) -> Res<IndexBlock> {
     Ok((
         input,
         IndexBlock {
-            index0_sectors,
+            _index0_sectors: index0_sectors,
             index1_sectors,
         },
     ))
