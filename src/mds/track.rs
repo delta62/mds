@@ -1,4 +1,7 @@
-use super::types::{Bytes, Res};
+use super::{
+    index::{index_block, IndexBlock},
+    types::{Bytes, Res},
+};
 use nom::{
     bytes::complete::take,
     combinator::map_res,
@@ -16,7 +19,7 @@ pub struct Track {
     minute: u8,
     second: u8,
     frame: u8,
-    index_block_offset: u32,
+    index: Option<IndexBlock>,
     sector_size: u16,
     track_start_sector: i32,
     track_start_offset: u64,
@@ -96,13 +99,17 @@ impl Track {
     }
 
     pub fn num_sectors(&self) -> usize {
-        todo!()
+        self.index
+            .as_ref()
+            .map(|idx| idx.index1_sectors as usize)
+            .unwrap_or_default()
     }
 }
 
-pub fn track(input: Bytes) -> Res<Track> {
+pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
+    let track_input = &input[track_offset..];
     let (
-        input,
+        rest,
         (
             track_mode,
             num_subchannels,
@@ -140,27 +147,34 @@ pub fn track(input: Bytes) -> Res<Track> {
         le_u32,          // num filenames for this track
         le_u32,          // offset to filename block for this track
         take(0x18usize), // zero
-    ))(input)?;
+    ))(track_input)?;
 
-    Ok((
-        input,
-        Track {
-            track_mode,
-            num_subchannels,
-            adr,
-            track_number,
-            point,
-            minute,
-            second,
-            frame,
-            index_block_offset,
-            sector_size,
-            track_start_sector,
-            track_start_offset,
-            num_filenames,
-            filename_offset,
-        },
-    ))
+    let index = if index_block_offset > 0 {
+        let offset = index_block_offset.try_into().unwrap();
+        let block_input = &input[offset..];
+        Some(index_block(block_input)?.1)
+    } else {
+        None
+    };
+
+    let track = Track {
+        track_mode,
+        num_subchannels,
+        adr,
+        track_number,
+        point,
+        minute,
+        second,
+        frame,
+        index,
+        sector_size,
+        track_start_sector,
+        track_start_offset,
+        num_filenames,
+        filename_offset,
+    };
+
+    Ok((rest, track))
 }
 
 fn track_mode(input: Bytes) -> Res<TrackMode> {

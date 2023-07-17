@@ -17,7 +17,7 @@ pub struct Session {
     num_lead_in_data_blocks: u8,
     first_track_num: u16,
     last_track_num: u16,
-    first_block_offset: u32,
+    first_track_offset: u32,
     tracks: Vec<Track>,
 }
 
@@ -40,7 +40,7 @@ pub fn session(input: Bytes, session_offset: usize) -> Res<Session> {
             first_track_num,
             last_track_num,
             _,
-            first_block_offset,
+            first_track_offset,
         ),
     ) = tuple((
         take(session_offset),
@@ -55,12 +55,12 @@ pub fn session(input: Bytes, session_offset: usize) -> Res<Session> {
         le_u32,
     ))(input)?;
 
-    let data_blocks_offset: usize = first_block_offset.try_into().unwrap();
+    let data_blocks_offset: usize = first_track_offset.try_into().unwrap();
     let mut tracks = Vec::new();
 
     for i in 0..num_data_blocks {
         let block_offset = data_blocks_offset + DATA_BLOCK_SIZE * i as usize;
-        let (_, track) = track(&input[block_offset..])?;
+        let (_, track) = track(input, block_offset)?;
         tracks.push(track);
     }
 
@@ -72,7 +72,7 @@ pub fn session(input: Bytes, session_offset: usize) -> Res<Session> {
         num_lead_in_data_blocks,
         first_track_num,
         last_track_num,
-        first_block_offset,
+        first_track_offset,
         tracks,
     };
 

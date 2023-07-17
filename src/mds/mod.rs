@@ -1,4 +1,5 @@
 mod header;
+mod index;
 mod session;
 mod track;
 mod types;

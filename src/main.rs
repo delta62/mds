@@ -47,7 +47,7 @@ fn mds_to_iso<P: AsRef<Path>>(mds: &Mds, mdfpath: P, outpath: P) -> Result<()> {
     let file = File::open(mdfpath)?;
     let mut reader = BufReader::new(file);
 
-    let mut buf = Vec::with_capacity(sector_size);
+    let mut buf = vec![0; sector_size];
 
     for _ in 0..num_sectors {
         reader.read_exact(&mut buf)?;
