@@ -20,11 +20,16 @@ pub fn info(args: &Args) -> Result<()> {
         println!("Session {}", i + 1);
 
         for (i, track) in session.data_tracks().enumerate() {
+            let filename = track
+                .data_filename(&args.mds_file)
+                .unwrap_or("--none--".to_owned());
+
             println!("  Track {}", i + 1);
             println!("    Mode:         {:?}", track.mode);
             println!("    Subchannels:  {:?}", track.num_subchannels);
             println!("    Sectors:      {}", track.num_sectors());
             println!("    Sector size:  {}", track.sector_size());
+            println!("    Data file:    {}", filename);
         }
     }
 

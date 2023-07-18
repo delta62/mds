@@ -1,13 +1,15 @@
 use super::{
+    filename::filename_block,
     index::{index_block, IndexBlock},
     types::{Bytes, Res},
 };
 use nom::{
-    bytes::complete::take,
-    combinator::map_res,
+    bytes::complete::{take, take_till},
+    combinator::{map_res, success},
     number::complete::{le_i32, le_u16, le_u32, le_u64, le_u8},
     sequence::tuple,
 };
+use std::{ffi::CString, path::Path};
 
 #[derive(Debug)]
 pub struct Track {
@@ -24,7 +26,7 @@ pub struct Track {
     _track_start_sector: i32,
     _track_start_offset: u64,
     _num_filenames: u32,
-    _filename_offset: u32,
+    filename: Option<String>,
 }
 
 #[derive(Debug)]
@@ -104,6 +106,22 @@ impl Track {
             .map(|idx| idx.index1_sectors as usize)
             .unwrap_or_default()
     }
+
+    pub fn data_filename<P: AsRef<Path>>(&self, mds_file_name: P) -> Option<String> {
+        self.filename.as_ref().map(|name| {
+            let mut pb = mds_file_name.as_ref().to_path_buf();
+            match name.as_str() {
+                "*.mdf" => {
+                    pb.set_extension("mdf");
+                    pb.to_string_lossy().to_string()
+                }
+                name => {
+                    pb.set_file_name(name);
+                    pb.to_string_lossy().to_string()
+                }
+            }
+        })
+    }
 }
 
 pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
@@ -157,6 +175,13 @@ pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
         None
     };
 
+    let filename = if filename_offset > 0 {
+        let filename_block = filename_block(&input[filename_offset as usize..])?.1;
+        Some(filename(&input[filename_block.filename_offset as usize..])?.1)
+    } else {
+        None
+    };
+
     let track = Track {
         mode,
         num_subchannels,
@@ -171,10 +196,21 @@ pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
         _track_start_sector: track_start_sector,
         _track_start_offset: track_start_offset,
         _num_filenames: num_filenames,
-        _filename_offset: filename_offset,
+        filename,
     };
 
     Ok((rest, track))
+}
+
+fn is_zero(x: u8) -> bool {
+    x == 0
+}
+
+fn filename(input: Bytes) -> Res<String> {
+    let (input, s) = map_res(take_till(is_zero), |x| CString::new(x))(input)?;
+    let s = s.to_string_lossy().to_string();
+
+    Ok((input, s))
 }
 
 fn track_mode(input: Bytes) -> Res<TrackMode> {
