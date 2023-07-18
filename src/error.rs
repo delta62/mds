@@ -7,7 +7,6 @@ pub enum Error {
     Io(io::Error),
     MultiTrackNotSupported,
     NoDataTracks,
-    NoMdsGiven { prog_name: String },
     ParseError,
     WrongFileTypeGiven,
 }
@@ -18,7 +17,6 @@ impl Display for Error {
             Self::Io(err) => write!(f, "{err}"),
             Self::MultiTrackNotSupported => write!(f, "Multi track conversion not yet supported"),
             Self::NoDataTracks => write!(f, "There are no data tracks in this mdf"),
-            Self::NoMdsGiven { prog_name } => write!(f, "Usage: {prog_name} <mds_path>"),
             Self::ParseError => write!(f, "Error parsing mds file"),
             Self::WrongFileTypeGiven => write!(f, "The given file is not an .mds file"),
         }

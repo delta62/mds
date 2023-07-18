@@ -11,8 +11,8 @@ use nom::{
 
 #[derive(Debug)]
 pub struct Track {
-    _track_mode: TrackMode,
-    num_subchannels: SubChannels,
+    pub mode: TrackMode,
+    pub num_subchannels: SubChannels,
     _adr: u8,
     _track_number: u8,
     point: u8,
@@ -111,7 +111,7 @@ pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
     let (
         rest,
         (
-            track_mode,
+            mode,
             num_subchannels,
             adr,
             track_number,
@@ -158,7 +158,7 @@ pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
     };
 
     let track = Track {
-        _track_mode: track_mode,
+        mode,
         num_subchannels,
         _adr: adr,
         _track_number: track_number,
