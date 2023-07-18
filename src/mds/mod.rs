@@ -9,6 +9,7 @@ use crate::error::{Error, Result};
 pub use header::{header, Header};
 use nom::Finish;
 pub use session::{session, Session};
+pub use track::Track;
 use types::{Bytes, Res};
 
 const SESSION_SIZE: usize = 0x18;

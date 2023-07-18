@@ -10,8 +10,8 @@ const DATA_BLOCK_SIZE: usize = 0x50;
 
 #[derive(Debug)]
 pub struct Session {
-    _start_sector: i32,
-    _end_sector: i32,
+    pub start_sector: i32,
+    pub end_sector: i32,
     _session_number: u16,
     _num_data_blocks: u8,
     _num_lead_in_data_blocks: u8,
@@ -65,8 +65,8 @@ pub fn session(input: Bytes, session_offset: usize) -> Res<Session> {
     }
 
     let session = Session {
-        _start_sector: start_sector,
-        _end_sector: end_sector,
+        start_sector,
+        end_sector,
         _session_number: session_number,
         _num_data_blocks: num_data_blocks,
         _num_lead_in_data_blocks: num_lead_in_data_blocks,

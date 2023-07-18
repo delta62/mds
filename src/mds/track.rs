@@ -5,7 +5,7 @@ use super::{
 };
 use nom::{
     bytes::complete::{take, take_till},
-    combinator::{map_res, success},
+    combinator::map_res,
     number::complete::{le_i32, le_u16, le_u32, le_u64, le_u8},
     sequence::tuple,
 };
@@ -18,13 +18,13 @@ pub struct Track {
     _adr: u8,
     _track_number: u8,
     point: u8,
-    _minute: u8,
-    _second: u8,
-    _frame: u8,
+    minute: u8,
+    second: u8,
+    frame: u8,
     index: Option<IndexBlock>,
     sector_size: u16,
-    _track_start_sector: i32,
-    _track_start_offset: u64,
+    pub track_start_sector: i32,
+    pub track_start_offset: u64,
     _num_filenames: u32,
     filename: Option<String>,
 }
@@ -122,6 +122,10 @@ impl Track {
             }
         })
     }
+
+    pub fn time_str(&self) -> String {
+        format!("{:02}:{:02}.{:03}", self.minute, self.second, self.frame)
+    }
 }
 
 pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
@@ -188,13 +192,13 @@ pub fn track(input: Bytes, track_offset: usize) -> Res<Track> {
         _adr: adr,
         _track_number: track_number,
         point,
-        _minute: minute,
-        _second: second,
-        _frame: frame,
+        minute,
+        second,
+        frame,
         index,
         sector_size,
-        _track_start_sector: track_start_sector,
-        _track_start_offset: track_start_offset,
+        track_start_sector,
+        track_start_offset,
         _num_filenames: num_filenames,
         filename,
     };
