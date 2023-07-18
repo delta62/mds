@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::types::{Bytes, Res};
 use nom::{
     bytes::complete::{tag, take},
@@ -7,12 +9,20 @@ use nom::{
     sequence::tuple,
 };
 
-pub type Version = [u8; 2];
+#[derive(Clone, Copy, Debug)]
+pub struct Version([u8; 2]);
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let [major, minor] = self.0;
+        write!(f, "{}.{}", major, minor)
+    }
+}
 
 #[derive(Debug)]
 pub struct Header {
-    _version: Version,
-    _media_type: MediaType,
+    pub version: Version,
+    pub media_type: MediaType,
     num_sessions: u16,
     session_offset: u32,
 }
@@ -27,13 +37,29 @@ impl Header {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum MediaType {
     CdRom,
     CdR,
     CdRw,
     DvdRom,
-    DcdR,
+    DvdR,
+}
+
+impl Display for MediaType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use MediaType::*;
+
+        let s = match self {
+            CdRom => "CD-ROM",
+            CdR => "CD-R",
+            CdRw => "CD-RW",
+            DvdRom => "DVD",
+            DvdR => "DVD-R",
+        };
+
+        write!(f, "{s}")
+    }
 }
 
 pub struct UnknownMediaType(pub u16);
@@ -49,7 +75,7 @@ impl TryInto<MediaType> for u16 {
             0x01 => Ok(CdR),
             0x02 => Ok(CdRw),
             0x10 => Ok(DvdRom),
-            0x12 => Ok(DcdR),
+            0x12 => Ok(DvdR),
             x => Err(UnknownMediaType(x)),
         }
     }
@@ -60,8 +86,8 @@ pub fn header(input: Bytes) -> Res<Header> {
         tuple((id, version, media_type, le_u16, dvd_padding, le_u32))(input)?;
 
     let header = Header {
-        _version: version,
-        _media_type: media_type,
+        version,
+        media_type,
         num_sessions,
         session_offset,
     };
@@ -73,8 +99,8 @@ fn id(input: Bytes) -> Res<Bytes> {
     tag("MEDIA DESCRIPTOR")(input)
 }
 
-fn version(input: Bytes) -> Res<[u8; 2]> {
-    map_res(count(le_u8, 2), |x| x.try_into())(input)
+fn version(input: Bytes) -> Res<Version> {
+    map_res(count(le_u8, 2), |x| x.try_into().map(Version))(input)
 }
 
 fn media_type(input: Bytes) -> Res<MediaType> {

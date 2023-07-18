@@ -12,9 +12,16 @@ pub fn info(args: &Args) -> Result<()> {
     let file_size = bytes.len();
     let num_sessions = mds.sessions().count();
     let num_tracks = mds.sessions().flat_map(|sess| sess.data_tracks()).count();
+    let version = mds.version();
+    let media_type = mds.media_type();
 
     println!("{}", args.mds_file.as_path().to_str().unwrap_or_default());
-    println!("{file_size} bytes, {num_sessions} sessions, {num_tracks} tracks");
+    println!(
+        "MDS v{version} | {media_type}, {file_size} {}, {num_sessions} {}, {num_tracks} {}",
+        pluralize("byte", file_size),
+        pluralize("session", num_sessions),
+        pluralize("track", num_tracks),
+    );
 
     for (i, session) in mds.sessions().enumerate() {
         let first_sector = session.start_sector;
@@ -52,4 +59,12 @@ pub fn info(args: &Args) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn pluralize(s: &str, count: usize) -> String {
+    if count == 1 {
+        s.to_owned()
+    } else {
+        format!("{s}s")
+    }
 }

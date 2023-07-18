@@ -12,17 +12,27 @@ pub use session::{session, Session};
 pub use track::Track;
 use types::{Bytes, Res};
 
+use self::header::{MediaType, Version};
+
 const SESSION_SIZE: usize = 0x18;
 
 #[derive(Debug)]
 pub struct Mds {
-    _header: Header,
+    header: Header,
     sessions: Vec<Session>,
 }
 
 impl Mds {
     pub fn sessions(&self) -> impl Iterator<Item = &Session> {
         self.sessions.iter()
+    }
+
+    pub fn version(&self) -> Version {
+        self.header.version
+    }
+
+    pub fn media_type(&self) -> MediaType {
+        self.header.media_type
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
@@ -49,11 +59,5 @@ fn mds(input: Bytes) -> Res<Mds> {
         session_offset += SESSION_SIZE;
     }
 
-    Ok((
-        rest,
-        Mds {
-            _header: header,
-            sessions,
-        },
-    ))
+    Ok((rest, Mds { header, sessions }))
 }
