@@ -124,7 +124,8 @@ impl Track {
     }
 
     pub fn time_str(&self) -> String {
-        format!("{:02}:{:02}.{:03}", self.minute, self.second, self.frame)
+        let frame = (self.frame as f32 / 72.0 * 1000.0) as u32;
+        format!("{:02}:{:02}.{:03}", self.minute, self.second, frame)
     }
 }
 
