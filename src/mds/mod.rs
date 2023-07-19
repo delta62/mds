@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 pub use header::{header, Header};
 use nom::Finish;
 pub use session::{session, Session};
-pub use track::Track;
+pub use track::{Track, TrackMode};
 use types::{Bytes, Res};
 
 use self::header::{MediaType, Version};
