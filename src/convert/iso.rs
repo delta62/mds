@@ -1,5 +1,4 @@
 use crate::{
-    args::Args,
     error::{Error, Result},
     mds::{Mds, Track},
 };
@@ -9,12 +8,12 @@ use std::{
     path::Path,
 };
 
-pub fn convert(args: &Args) -> Result<()> {
-    let bytes = read(&args.mds_file).map_err(Error::Io)?;
+pub fn convert<P: AsRef<Path>>(mds_file: P) -> Result<()> {
+    let bytes = read(&mds_file).map_err(Error::Io)?;
     let mds = Mds::from_bytes(&bytes)?;
-    let writer = make_writer(&args.mds_file)?;
+    let writer = make_writer(&mds_file)?;
 
-    mds_to_iso(&mds, &args.mds_file, writer)
+    mds_to_iso(&mds, &mds_file, writer)
 }
 
 /// Given the path to a .mds file, create a buffered writer for the .iso file to write data to

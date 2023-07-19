@@ -1,5 +1,4 @@
 use crate::{
-    args::Args,
     error::{Error, Result},
     mds::{Mds, Track, TrackMode},
 };
@@ -9,15 +8,15 @@ use std::{
     path::Path,
 };
 
-pub fn convert(args: &Args) -> Result<()> {
-    let bytes = read(&args.mds_file).map_err(Error::Io)?;
+pub fn convert<P: AsRef<Path>>(mds_file: P) -> Result<()> {
+    let bytes = read(mds_file.as_ref()).map_err(Error::Io)?;
     let mds = Mds::from_bytes(&bytes)?;
 
-    let cue_writer = make_file_writer(&args.mds_file, "cue")?;
-    mds_to_cue(&mds, &args.mds_file, cue_writer)?;
+    let cue_writer = make_file_writer(mds_file.as_ref(), "cue")?;
+    mds_to_cue(&mds, mds_file.as_ref(), cue_writer)?;
 
-    let bin_writer = make_file_writer(&args.mds_file, "bin")?;
-    mds_to_bin(&mds, &args.mds_file, bin_writer)
+    let bin_writer = make_file_writer(mds_file.as_ref(), "bin")?;
+    mds_to_bin(&mds, mds_file.as_ref(), bin_writer)
 }
 
 fn make_file_reader<P: AsRef<Path>>(track: &Track, mds_path: P) -> Result<BufReader<File>> {

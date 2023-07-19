@@ -1,12 +1,11 @@
 use crate::{
-    args::Args,
     error::{Error, Result},
     mds::Mds,
 };
-use std::fs::read;
+use std::{fs::read, path::Path};
 
-pub fn info(args: &Args) -> Result<()> {
-    let bytes = read(&args.mds_file).map_err(Error::Io)?;
+pub fn info<P: AsRef<Path>>(mds_file: P) -> Result<()> {
+    let bytes = read(&mds_file).map_err(Error::Io)?;
     let mds = Mds::from_bytes(&bytes)?;
 
     let file_size = bytes.len();
@@ -15,7 +14,7 @@ pub fn info(args: &Args) -> Result<()> {
     let version = mds.version();
     let media_type = mds.media_type();
 
-    println!("{}", args.mds_file.as_path().to_str().unwrap_or_default());
+    println!("{}", mds_file.as_ref().to_str().unwrap_or_default());
     println!(
         "MDS v{version} | {media_type}, {file_size} {}, {num_sessions} {}, {num_tracks} {}",
         pluralize("byte", file_size),
@@ -35,7 +34,7 @@ pub fn info(args: &Args) -> Result<()> {
 
         for (i, track) in session.data_tracks().enumerate() {
             let filename = track
-                .data_filename(&args.mds_file)
+                .data_filename(&mds_file)
                 .unwrap_or("--none--".to_owned());
 
             let num_sectors = track.num_sectors();
