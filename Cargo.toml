@@ -1,7 +1,7 @@
 [package]
 name = "mds"
 description = "Conversion utilities for .mds & .mdf disk image files"
-version = "0.1.0"
+version = "0.1.0-alpha"
 edition = "2021"
 
 [dependencies]
@@ -11,3 +11,7 @@ nom = "7.1.3"
 version = "4.3.12"
 default-features = false
 features = ["std", "derive", "error-context", "help", "usage"]
+
+[profile.release]
+lto = true
+strip = "debuginfo"
