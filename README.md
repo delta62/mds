@@ -50,11 +50,11 @@ Session 1
 
 ### Converting to iso
 
-Run `mds convert iso <my_image.mds>` to convert the contents of an mdf to an iso
+Run `mds convert --format iso <my_image.mds>` to convert the contents of an mdf to an iso
 file. Note that iso files can only contain one track, so if you have a
 multi-track mdf you'll need to convert to a different format.
 
 ### Converting to bin/cue
 
-Run `mds convert cue <my_image.mds>` to convert the contents of an mdf to bin
+Run `mds convert --format cue <my_image.mds>` to convert the contents of an mdf to bin
 and cue files. This format does support multiple tracks.
