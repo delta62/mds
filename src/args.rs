@@ -19,8 +19,9 @@ pub enum Command {
 
 #[derive(Clone, Debug, ValueEnum)]
 pub enum OutputFormat {
-    /// Convert into a .iso file. ISO files can only contain one track.
+    /// Convert into an .iso file. ISO files can only contain one track.
     Iso,
+
     /// Convert into .bin and .cue files. This format supports multiple tracks.
     Cue,
 }

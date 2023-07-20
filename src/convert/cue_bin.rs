@@ -1,69 +1,49 @@
 use crate::{
     error::{Error, Result},
+    loader::load_mds,
     mds::{Mds, Track, TrackMode},
+    timecode::Timecode,
+    util::{reader_for_track, set_extension, writer_with_extension},
 };
 use std::{
-    fs::{read, File},
-    io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write},
+    io::{Read, Seek, SeekFrom, Write},
     path::Path,
 };
 
+// Information about the .cue file format can be found at
+// https://psx-spx.consoledev.net/cdromdrive/#cuebin-cdrwin, or the original user manual for cdrwin
+// can be found on archive.org:
+// https://web.archive.org/web/20070614044112/http://www.goldenhawk.com/download/cdrwin.pdf. The
+// various cuesheet commands are in appendix A.
+
 pub fn convert<P: AsRef<Path>>(mds_file: P) -> Result<()> {
-    let bytes = read(mds_file.as_ref()).map_err(Error::Io)?;
-    let mds = Mds::from_bytes(&bytes)?;
+    let mds = load_mds(&mds_file)?;
+    let bin_writer = writer_with_extension(&mds_file, "bin")?;
+    let cue_writer = writer_with_extension(&mds_file, "cue")?;
 
-    let cue_writer = make_file_writer(mds_file.as_ref(), "cue")?;
-    mds_to_cue(&mds, mds_file.as_ref(), cue_writer)?;
-
-    let bin_writer = make_file_writer(mds_file.as_ref(), "bin")?;
-    mds_to_bin(&mds, mds_file.as_ref(), bin_writer)
+    mds_to_cue(&mds, &mds_file, cue_writer)?;
+    mds_to_bin(&mds, &mds_file, bin_writer)
 }
 
-fn make_file_reader<P: AsRef<Path>>(track: &Track, mds_path: P) -> Result<BufReader<File>> {
-    let path = track
-        .data_filename(mds_path)
-        .ok_or(Error::MissingInputFile)?;
-    let file = File::open(path).map_err(Error::Io)?;
-    Ok(BufReader::new(file))
-}
-
-/// Given the path to a .mds file, create a buffered writer for the .iso file to write data to
-fn make_file_writer<P: AsRef<Path>>(mds_path: P, extension: &str) -> Result<BufWriter<File>>
+/// Generate a .cue file with metadata contained in an .mds file and write it to `writer`
+fn mds_to_cue<P, W>(mds: &Mds, mds_path: P, mut writer: W) -> Result<()>
 where
     P: AsRef<Path>,
+    W: Write,
 {
-    let mut out_path = mds_path.as_ref().to_path_buf();
-    out_path.set_extension(extension);
-
-    let out_file = File::create(out_path).map_err(Error::Io)?;
-    Ok(BufWriter::new(out_file))
-}
-
-fn mds_to_cue<P: AsRef<Path>, W: Write>(mds: &Mds, mds_path: P, mut writer: W) -> Result<()> {
-    let mut sessions = mds.sessions();
-    let session = sessions.next().ok_or(Error::NoSessions)?;
-
-    if sessions.next().is_some() {
-        Err(Error::TooManySessions)?;
-    }
-
-    let mut filename = mds_path.as_ref().to_path_buf();
-    filename.set_extension("bin");
-    let filename = filename.file_name().unwrap().to_str().unwrap();
+    let bin_path = set_extension(mds_path, "bin");
+    let filename = bin_path.file_name().unwrap().to_str().unwrap();
     writeln!(writer, "FILE \"{filename}\" BINARY").map_err(Error::Io)?;
 
-    // CUE tracks are 1-indexed
+    let session = mds.single_session()?;
+    let pregap_correction = session.start_time;
     let tracks = session
         .data_tracks()
         .enumerate()
-        .map(|(i, sess)| (i + 1, sess));
-
-    let pre_f = session.start_sector % 75;
-    let pre_s = session.start_sector / 75 - pre_f;
-    let pregap_correction = Timecode::from_msf(0, pre_s, pre_f);
+        .map(|(i, sess)| (i + 1, sess)); // CUE tracks are 1-indexed
 
     for (i, track) in tracks {
-        let mode = cue_media_type(&track);
+        let mode = cue_media_type(&track)?;
         let addr = cue_address(&track, pregap_correction);
 
         writeln!(writer, "  TRACK {i} {mode}").map_err(Error::Io)?; // TODO
@@ -73,19 +53,19 @@ fn mds_to_cue<P: AsRef<Path>, W: Write>(mds: &Mds, mds_path: P, mut writer: W) -
     Ok(())
 }
 
+/// Write all tracks of an .mdf to the given writer
 fn mds_to_bin<P, W>(mds: &Mds, mds_path: P, mut writer: W) -> Result<()>
 where
     P: AsRef<Path>,
     W: Write,
 {
-    let session = mds.sessions().next().unwrap();
+    let session = mds.single_session()?;
     let tracks = session.data_tracks();
 
     for track in tracks {
-        let mut mdf_reader = make_file_reader(track, &mds_path)?;
-        let track_offset = track.track_start_offset;
+        let mut mdf_reader = reader_for_track(&mds_path, track)?;
         mdf_reader
-            .seek(SeekFrom::Start(track_offset))
+            .seek(SeekFrom::Start(track.track_start_offset))
             .map_err(Error::Io)?;
 
         let sector_size = track.sector_size();
@@ -101,48 +81,33 @@ where
     Ok(())
 }
 
-fn cue_media_type(track: &Track) -> &str {
-    match track.mode {
-        TrackMode::Audio => "AUDIO",
-        TrackMode::Mode2 => "MODE2/2352",
-        _ => todo!(),
+/// Determine the track type that should be printed in a .cue file. There are a few well-known
+/// ones, but not every possibility is accounted for. If there are additional possible combinations
+/// which have been seen in the wild, add them here.
+///
+/// Note that the sector sizes in the .cue file (e.g. "Mode2/2352") are the sizes of the *data*
+/// region only because they do not include subchannel or error correction bits.
+fn cue_media_type(track: &Track) -> Result<&str> {
+    use Error::UnknownCueTrackSize;
+    use TrackMode::*;
+
+    match (track.mode, track.sector_data_size()) {
+        (Audio, 0x930) => Ok("AUDIO"),
+        (Mode1, 0x800) => Ok("MODE1/2048"),
+        (Mode1, 0x930) => Ok("MODE1/2352"),
+        (Mode2, 0x920) => Ok("MODE2/2336"),
+        (Mode2, 0x930) => Ok("MODE2/2352"),
+        (mode, data_sector_size) => Err(UnknownCueTrackSize(mode, data_sector_size)),
     }
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-struct Timecode(i32);
-
-impl Timecode {
-    pub fn from_track(track: &Track) -> Self {
-        Self::from_msf(track.minute, track.second, track.frame)
-    }
-
-    pub fn from_msf<M, S, F>(minutes: M, seconds: S, frames: F) -> Self
-    where
-        M: Into<i32>,
-        S: Into<i32>,
-        F: Into<i32>,
-    {
-        let frames = minutes.into() * 60 * 75 + seconds.into() * 75 + frames.into();
-        Self(frames)
-    }
-
-    pub fn add(&mut self, time: Timecode) {
-        self.0 += time.0;
-    }
-
-    pub fn msf(&self) -> (i32, i32, i32) {
-        let f = self.0 % 75;
-        let s = (self.0 - f) / 75 % 60;
-        let m = (self.0 - s - f) / 60 / 75;
-
-        (m, s, f)
-    }
-}
-
+/// Format a track's timecode as it should appear in an INDEX directive.
+/// Since .cue files do not include pregap information, .mds discs which do have pregap data (most
+/// of them) need to offset their track timecodes, because the first INDEX must have a timecode of
+/// 00:00:00. However, with a pregap an .mds file would typically start the first track at
+/// 00:02:00.
 fn cue_address(track: &Track, pregap_correction: Timecode) -> String {
-    let mut timecode = Timecode::from_track(track);
-    timecode.add(pregap_correction);
+    let timecode = Timecode::from_track(track) + pregap_correction;
     let (m, s, f) = timecode.msf();
 
     format!("{m:02}:{s:02}:{f:02}")

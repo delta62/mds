@@ -29,7 +29,7 @@ pub struct Track {
     filename: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum TrackMode {
     None,
     Audio,

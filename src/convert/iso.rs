@@ -1,55 +1,30 @@
 use crate::{
     error::{Error, Result},
-    mds::{Mds, Track},
+    loader::load_mds,
+    mds::Track,
+    util::{reader_for_track, writer_with_extension},
 };
 use std::{
-    fs::{read, File},
-    io::{BufReader, BufWriter, Read, Write},
+    io::{Read, Write},
     path::Path,
 };
 
+/// Convert a .mdf file (described by a .mds file) into a .iso file. This is not always possible,
+/// because an ISO represents the bytes of one track. If the .mds refers to a multi-track disc,
+/// writing to an ISO doesn't make sense. Try using BIN/CUE in that case.
 pub fn convert<P: AsRef<Path>>(mds_file: P) -> Result<()> {
-    let bytes = read(&mds_file).map_err(Error::Io)?;
-    let mds = Mds::from_bytes(&bytes)?;
-    let writer = make_writer(&mds_file)?;
+    let mds = load_mds(&mds_file)?;
+    let track = mds.single_track()?;
+    let writer = writer_with_extension(&mds_file, "iso")?;
 
-    mds_to_iso(&mds, &mds_file, writer)
+    track_to_iso(&track, &mds_file, writer)
 }
 
-/// Given the path to a .mds file, create a buffered writer for the .iso file to write data to
-fn make_writer<P: AsRef<Path>>(mds_path: P) -> Result<BufWriter<File>>
-where
-    P: AsRef<Path>,
-{
-    let mut out_path = mds_path.as_ref().to_path_buf();
-    out_path.set_extension("iso");
-
-    let out_file = File::create(out_path).map_err(Error::Io)?;
-    Ok(BufWriter::new(out_file))
-}
-
-fn make_reader<P: AsRef<Path>>(track: &Track, mds_file_path: P) -> Result<BufReader<File>> {
-    let mdf_path = track
-        .data_filename(mds_file_path)
-        .ok_or(Error::MissingInputFile)?;
-    let file = File::open(mdf_path).map_err(Error::Io)?;
-
-    Ok(BufReader::new(file))
-}
-
-/// Convert a .mdf file (described by a .mds file) into a .iso file
-fn mds_to_iso<P: AsRef<Path>, W: Write>(mds: &Mds, mds_path: P, mut writer: W) -> Result<()> {
-    let mut data_tracks = mds.sessions().flat_map(|session| session.data_tracks());
-    let track = data_tracks.next().ok_or(Error::NoDataTracks)?;
-
-    if data_tracks.next().is_some() {
-        Err(Error::MultiTrackNotSupported)?;
-    }
-
+fn track_to_iso<P: AsRef<Path>, W: Write>(track: &Track, mds_path: P, mut writer: W) -> Result<()> {
     let sector_size = track.sector_size();
     let data_size = track.sector_data_size();
     let num_sectors = track.num_sectors();
-    let mut reader = make_reader(&track, mds_path)?;
+    let mut reader = reader_for_track(&mds_path, track)?;
 
     let mut buf = vec![0; sector_size];
     for _ in 0..num_sectors {

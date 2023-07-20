@@ -1,20 +1,16 @@
-use crate::{
-    error::{Error, Result},
-    mds::Mds,
-};
-use std::{fs::read, path::Path};
+use crate::{error::Result, loader::load_mds, util::pluralize};
+use std::path::Path;
 
 pub fn info<P: AsRef<Path>>(mds_file: P) -> Result<()> {
-    let bytes = read(&mds_file).map_err(Error::Io)?;
-    let mds = Mds::from_bytes(&bytes)?;
+    let mds = load_mds(&mds_file)?;
 
-    let file_size = bytes.len();
+    let file_size = mds.byte_len();
     let num_sessions = mds.sessions().count();
-    let num_tracks = mds.sessions().flat_map(|sess| sess.data_tracks()).count();
+    let num_tracks = mds.sessions().map(|sess| sess.data_tracks().count()).sum();
     let version = mds.version();
     let media_type = mds.media_type();
 
-    println!("{}", mds_file.as_ref().to_str().unwrap_or_default());
+    println!("{}", mds_file.as_ref().to_str().unwrap_or("--none--"));
     println!(
         "MDS v{version} | {media_type}, {file_size} {}, {num_sessions} {}, {num_tracks} {}",
         pluralize("byte", file_size),
@@ -58,12 +54,4 @@ pub fn info<P: AsRef<Path>>(mds_file: P) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn pluralize(s: &str, count: usize) -> String {
-    if count == 1 {
-        s.to_owned()
-    } else {
-        format!("{s}s")
-    }
 }

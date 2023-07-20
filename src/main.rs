@@ -2,7 +2,10 @@ mod args;
 mod convert;
 mod error;
 mod info;
+mod loader;
 mod mds;
+mod timecode;
+mod util;
 
 use args::{Args, Command, ConvertArgs, OutputFormat};
 use clap::Parser;
