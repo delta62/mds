@@ -46,7 +46,7 @@ where
         let mode = cue_media_type(&track)?;
         let addr = cue_address(&track, pregap_correction);
 
-        writeln!(writer, "  TRACK {i} {mode}").map_err(Error::Io)?; // TODO
+        writeln!(writer, "  TRACK {i} {mode}").map_err(Error::Io)?;
         writeln!(writer, "    INDEX 01 {addr}").map_err(Error::Io)?;
     }
 
