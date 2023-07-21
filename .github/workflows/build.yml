@@ -6,13 +6,15 @@ jobs:
   release:
     name: release ${{ matrix.target }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: github.event_name == 'release'
     strategy:
       fail-fast: false
       matrix:
         target:
           [
-            x84_64-pc-windows-gnu,
+            x86_64-pc-windows-gnu,
             x86_64-unknown-linux-musl,
             x86_64-apple-darwin,
             wasm32-wasi,
