@@ -1,7 +1,7 @@
 [package]
 name = "mds"
 description = "Conversion utilities for .mds & .mdf disk image files"
-version = "0.1.0-alpha02"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]

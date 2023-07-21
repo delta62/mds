@@ -12,6 +12,13 @@ describe the contents of their accompanying `.mdf` files. This is in contrast to
 file itself. That said, you will need the .mds metadata file to use this
 program.
 
+## Installation
+
+If you want to compile from source, use `cargo build` and the standard
+toolchain.
+
+Pre-built binaries are available on [the releases page](https://github.com/delta62/mds/releases).
+
 ## Usage
 
 ### Printing mds metadata
