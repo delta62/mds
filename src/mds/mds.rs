@@ -28,7 +28,7 @@ impl Mds {
             Err(Error::TooManySessions)?;
         }
 
-        Ok(&self.sessions[1])
+        Ok(&self.sessions[0])
     }
 
     pub fn single_track(&self) -> Result<&Track> {
