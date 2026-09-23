@@ -28,17 +28,17 @@ impl TryInto<NameFormat> for u8 {
 #[derive(Debug)]
 pub struct FilenameBlock {
     pub filename_offset: u32,
-    pub filename_format: NameFormat,
+    pub _filename_format: NameFormat,
 }
 
 pub fn filename_block(input: Bytes) -> Res<FilenameBlock> {
-    let (rest, (filename_offset, filename_format)) = tuple((le_u32, name_format))(input)?;
+    let (rest, (filename_offset, _filename_format)) = tuple((le_u32, name_format))(input)?;
 
     Ok((
         rest,
         FilenameBlock {
             filename_offset,
-            filename_format,
+            _filename_format,
         },
     ))
 }

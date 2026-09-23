@@ -11,7 +11,5 @@ mod types;
 // out there is at https://psx-spx.consoledev.net/cdromdrive/#cdrom-disk-images-mdsmdf-alcohol-120.
 // Beware some sites which have completely incorrect information listed!
 
-pub use header::{header, Header, Version};
 pub use mds::Mds;
-pub use session::{session, Session};
 pub use track::{Track, TrackMode};
