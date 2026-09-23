@@ -111,7 +111,7 @@ impl Track {
         self.filename.as_ref().map(|name| {
             let mut pb = mds_file_name.as_ref().to_path_buf();
             match name.as_str() {
-                "*.mdf" => {
+                "*.mdf" | "*" => {
                     pb.set_extension("mdf");
                     pb.to_string_lossy().to_string()
                 }
