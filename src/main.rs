@@ -18,8 +18,8 @@ fn main() {
     let result = match &args.command {
         Command::Info(args) => info(&args.mds_file),
         Command::Convert(ConvertArgs { mds_file, format }) => match format {
-            OutputFormat::Iso => convert_to_iso(&mds_file),
-            OutputFormat::Cue => convert_to_cue_bin(&mds_file),
+            OutputFormat::Iso => convert_to_iso(mds_file),
+            OutputFormat::Cue => convert_to_cue_bin(mds_file),
         },
     };
 

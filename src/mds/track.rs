@@ -212,7 +212,7 @@ fn is_zero(x: u8) -> bool {
 }
 
 fn filename(input: Bytes) -> Res<String> {
-    let (input, s) = map_res(take_till(is_zero), |x| CString::new(x))(input)?;
+    let (input, s) = map_res(take_till(is_zero), CString::new)(input)?;
     let s = s.to_string_lossy().to_string();
 
     Ok((input, s))

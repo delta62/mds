@@ -17,7 +17,7 @@ pub fn convert<P: AsRef<Path>>(mds_file: P) -> Result<()> {
     let track = mds.single_track()?;
     let writer = writer_with_extension(&mds_file, "iso")?;
 
-    track_to_iso(&track, &mds_file, writer)
+    track_to_iso(track, &mds_file, writer)
 }
 
 fn track_to_iso<P: AsRef<Path>, W: Write>(track: &Track, mds_path: P, mut writer: W) -> Result<()> {
