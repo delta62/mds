@@ -43,8 +43,8 @@ where
         .map(|(i, sess)| (i + 1, sess)); // CUE tracks are 1-indexed
 
     for (i, track) in tracks {
-        let mode = cue_media_type(&track)?;
-        let addr = cue_address(&track, pregap_correction);
+        let mode = cue_media_type(track)?;
+        let addr = cue_address(track, pregap_correction);
 
         writeln!(writer, "  TRACK {i} {mode}").map_err(Error::Io)?;
         writeln!(writer, "    INDEX 01 {addr}").map_err(Error::Io)?;
